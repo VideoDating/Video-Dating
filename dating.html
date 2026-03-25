@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Video Match - Dating</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <style>
+        #remoteVideo { 
+            object-fit: cover; 
+            background: #000; 
+            z-index: 10; 
+        }
+        video::-webkit-media-controls { display:none !important; }
+        video::-webkit-media-controls-start-playback-button { display: none !important; }
+        
+        #localVideo { 
+            object-fit: cover; 
+            background: #333; 
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 15px; 
+            z-index: 100;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        .controls-layer {
+            position: absolute;
+            bottom: 50px;
+            left: 0;
+            right: 0;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .mirror { transform: scaleX(-1); }
+        #chatBox {
+            max-width: 85%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+    </style>
+</head>
+<body class="bg-black text-white font-sans overflow-hidden">
+
+    <div id="appContainer" class="relative h-screen w-full bg-black">
+        <video id="remoteVideo" autoplay playsinline webkit-playsinline class="absolute inset-0 w-full h-full bg-black"></video>
+        
+        <div class="absolute top-6 right-4 z-[100]">
+            <video id="localVideo" autoplay muted playsinline class="w-28 h-40 mirror"></video>
+            <button onclick="switchCamera()" class="absolute -bottom-2 -left-2 bg-pink-500 text-white p-3 rounded-full shadow-2xl active:scale-75 transition-all border-2 border-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            </button>
+        </div>
+
+        <div class="controls-layer">
+            <div id="status" class="bg-black/50 backdrop-blur-sm px-4 py-1 rounded-full text-xs font-semibold border border-white/20">
+                Initializing...
+            </div>
+
+            <div id="chatBox" class="hidden w-80 p-4 mb-2">
+                <div id="messages" class="h-24 overflow-y-auto text-xs space-y-2 mb-3 scrollbar-hide"></div>
+                <div class="flex gap-2">
+                    <input id="msgInput" type="text" placeholder="Type Messages..." class="flex-1 bg-white/10 p-2 rounded-full text-xs outline-none border border-white/20 text-white">
+                    <button onclick="sendMsg()" class="bg-pink-500 p-2 px-4 rounded-full text-xs font-bold">Send</button>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button onclick="stopMatch()" class="bg-red-600/90 p-4 rounded-full shadow-lg active:scale-90 transition">
+                    <svg class="w-6 h-6" fill="white" viewBox="0 0 24 24"><path d="M12 2c5.52 0 10 4.48 10 10s-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2zM10 10h4v4h-4z"/></svg>
+                </button>
+
+                <button id="camToggleBtn" onclick="toggleVideo()" class="bg-indigo-600/90 p-4 rounded-full shadow-lg active:scale-90 transition">
+                    <svg id="camIcon" class="w-6 h-6" fill="white" viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                </button>
+
+                <button id="skipBtn" onclick="skipMatch()" class="bg-white text-black font-extrabold px-10 py-4 rounded-full shadow-2xl active:scale-95 transition">
+                    NEXT
+                </button>
+
+                <button onclick="toggleChat()" class="bg-indigo-600/90 p-4 rounded-full shadow-lg active:scale-90 transition">
+                    <svg class="w-6 h-6" fill="white" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDvMIYdkDIybQOag5z-Ci9EwMY425mPlwk",
+            authDomain: "test-67af4.firebaseapp.com",
+            databaseURL: "https://test-67af4-default-rtdb.firebaseio.com",
+            projectId: "test-67af4",
+            storageBucket: "test-67af4.firebasestorage.app",
+            messagingSenderId: "696051017684",
+            appId: "1:696051017684:web:72e8327e6a72a256655841",
+            measurementId: "G-D28T7SXQX1"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let userId = localStorage.getItem('guestId') || "user_" + Math.floor(Math.random() * 1000000);
+        localStorage.setItem('guestId', userId);
+
+        let localStream, peer, currentCall, dataConn;
+        let currentFacingMode = 'user'; 
+        let isVideoOn = true;
+
+        // Automatically start on page load
+        window.onload = initPeer;
+
+        async function initPeer() {
+            peer = new Peer(userId);
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: currentFacingMode }, 
+                    audio: true 
+                });
+                document.getElementById('localVideo').srcObject = localStream;
+                startMatch();
+            } catch (err) {
+                alert("Need Camera and Mic Permission.");
+                window.location.href = 'index.html';
+            }
+
+            peer.on('call', call => {
+                call.answer(localStream);
+                handleCall(call);
+            });
+
+            peer.on('connection', conn => {
+                dataConn = conn;
+                setupDataHandler();
+            });
+        }
+
+        function toggleVideo() {
+            if (localStream) {
+                isVideoOn = !isVideoOn;
+                localStream.getVideoTracks()[0].enabled = isVideoOn;
+                const btn = document.getElementById('camToggleBtn');
+                const icon = document.getElementById('camIcon');
+                if (isVideoOn) {
+                    btn.classList.replace('bg-gray-600', 'bg-indigo-600');
+                    icon.innerHTML = '<path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>';
+                } else {
+                    btn.classList.replace('bg-indigo-600', 'bg-gray-600');
+                    icon.innerHTML = '<path d="M18 10.48V6c0-1.1-.9-2-2-2H6.83l2 2H16v7.17l2 2v-4.69zM3.41 2.86L2 4.27l3.18 3.18C5.07 7.63 5 7.81 5 8v8c0 1.1.9 2 2 2h9c.22 0 .39-.07.55-.18L19.73 21l1.41-1.41L3.41 2.86zM7 16V9.17L13.83 16H7z"/>';
+                }
+            }
+        }
+
+        async function switchCamera() {
+            if (!localStream) return;
+            currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
+            const localVid = document.getElementById('localVideo');
+            if(currentFacingMode === 'user') localVid.classList.add('mirror');
+            else localVid.classList.remove('mirror');
+
+            try {
+                const newStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: currentFacingMode },
+                    audio: true
+                });
+
+                if (currentCall && currentCall.peerConnection) {
+                    const videoTrack = newStream.getVideoTracks()[0];
+                    const sender = currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
+                    if (sender) sender.replaceTrack(videoTrack);
+                }
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = newStream;
+                localVid.srcObject = localStream;
+                localStream.getVideoTracks()[0].enabled = isVideoOn;
+            } catch (err) { console.error(err); }
+        }
+
+        function handleCall(call) {
+            currentCall = call;
+            call.on('stream', remoteStream => {
+                const rv = document.getElementById('remoteVideo');
+                rv.srcObject = remoteStream;
+                document.getElementById('status').innerText = "Connected! 🟢";
+            });
+        }
+
+        function startMatch() {
+            document.getElementById('status').innerText = "Searching...";
+            const waitingRef = db.ref('waiting_room');
+            waitingRef.once('value', snapshot => {
+                let foundPeer = null;
+                snapshot.forEach(child => { if (child.key !== userId) foundPeer = child.key; });
+                if (foundPeer) {
+                    db.ref('waiting_room/' + foundPeer).remove();
+                    const call = peer.call(foundPeer, localStream);
+                    dataConn = peer.connect(foundPeer);
+                    setupDataHandler();
+                    handleCall(call);
+                } else {
+                    waitingRef.child(userId).set(true);
+                    waitingRef.child(userId).onDisconnect().remove();
+                }
+            });
+        }
+
+        function skipMatch() {
+            if (currentCall) currentCall.close();
+            if (dataConn) dataConn.close();
+            document.getElementById('remoteVideo').srcObject = null;
+            document.getElementById('messages').innerHTML = "";
+            startMatch();
+        }
+
+        function stopMatch() { window.location.href = 'index.html'; }
+        function toggleChat() { document.getElementById('chatBox').classList.toggle('hidden'); }
+
+        function setupDataHandler() {
+            dataConn.on('data', data => {
+                const msgDiv = document.createElement('div');
+                msgDiv.innerHTML = `<span class="text-pink-400 font-bold">Stranger:</span> <span class="text-white">${data}</span>`;
+                document.getElementById('messages').appendChild(msgDiv);
+                document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+            });
+        }
+
+        function sendMsg() {
+            const val = document.getElementById('msgInput').value;
+            if (val && dataConn) {
+                dataConn.send(val);
+                const msgDiv = document.createElement('div');
+                msgDiv.innerHTML = `<span class="text-indigo-400 font-bold">You:</span> <span class="text-white">${val}</span>`;
+                document.getElementById('messages').appendChild(msgDiv);
+                document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+                document.getElementById('msgInput').value = "";
+            }
+        }
+    </script>
+</body>
+</html>
