@@ -1,87 +1,153 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Video Dating - Welcome</title>
+    <title>Video Chat - Match Now</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; background-color: #000; overflow: hidden; }
         
-        /* Button Glow Animation */
-        .btn-glow:active {
-            transform: scale(0.95);
-        }
-        
-        .primary-glow {
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-            transition: all 0.3s ease;
-        }
-        
-        .primary-glow:hover {
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+        /* Starry Background */
+        .stars-container {
+            position: absolute; inset: 0;
+            background-image: 
+                radial-gradient(1px 1px at 20px 30px, #eee, rgba(0,0,0,0)),
+                radial-gradient(1.2px 1.2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(1.5px 1.5px at 50px 160px, #ddd, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 80px 120px, #fff, rgba(0,0,0,0));
+            background-size: 250px 250px;
+            opacity: 0.3;
         }
 
-        /* Subtle heartbeat for the main button */
-        @keyframes heartbeat {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.03); }
-            100% { transform: scale(1); }
+        /* Card Animation & Glow */
+        .card-main {
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 25px rgba(255, 62, 120, 0.5);
+            border: 2px solid #FF3E78;
         }
-        .animate-heartbeat {
-            animation: heartbeat 2s infinite ease-in-out;
+
+        .card-side {
+            transition: all 0.6s ease-in-out;
+            filter: blur(2px) brightness(0.4);
+            transform: scale(0.8);
+            opacity: 0.3;
+        }
+
+        .btn-pink-gradient {
+            background: linear-gradient(90deg, #FF5E8E 0%, #FF3E78 100%);
+        }
+
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
         }
     </style>
 </head>
-<body class="bg-black text-white overflow-hidden">
+<body class="text-white">
 
-    <!-- Background remains exactly as you had it -->
-    <div id="landingPage" class="fixed inset-0 z-[500] flex flex-col items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 p-6 text-center">
-        
-        <!-- Logo Icon -->
-        <div class="mb-6 bg-white/10 p-5 rounded-full backdrop-blur-md border border-white/10">
-            <svg class="w-16 h-16 text-pink-400 drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-            </svg>
+    <div id="landingPage" class="fixed inset-0 flex flex-col bg-black">
+        <div class="stars-container"></div>
+
+        <!-- Sliding Cards Section (Margin adjusted after removing header) -->
+        <div class="flex-1 flex items-center justify-center relative px-4 overflow-hidden mt-10">
+            <!-- Left Side Card -->
+            <div id="leftCard" class="card-side absolute -left-24 w-64 h-96 rounded-[35px] overflow-hidden">
+                <img src="" class="w-full h-full object-cover">
+            </div>
+
+            <!-- Main Center Card -->
+            <div id="centerCard" class="card-main z-10 w-72 h-[440px] rounded-[40px] overflow-hidden">
+                <img src="" class="w-full h-full object-cover">
+            </div>
+
+            <!-- Right Side Card -->
+            <div id="rightCard" class="card-side absolute -right-24 w-64 h-96 rounded-[35px] overflow-hidden">
+                <img src="" class="w-full h-full object-cover">
+            </div>
         </div>
 
-        <h1 class="text-4xl font-extrabold mb-2 tracking-tight">Video Dating</h1>
-        <p class="text-sm opacity-80 mb-10 max-w-xs leading-relaxed">Meet With New People
-         and Make Some Friends❤️ <br>Click On Start Matching!</p>
-        
-        <!-- Updated Premium Buttons -->
-        <div class="flex flex-col gap-4 w-full max-w-xs">
+        <!-- Bottom UI Controls -->
+        <div class="flex flex-col items-center pb-8 pt-4 px-6 z-10 space-y-4">
             
-            <!-- 1. Start Matching Button (Primary) -->
+            <!-- Automatic Online Status -->
+            <div class="flex items-center gap-2 mb-2 text-sm font-semibold">
+                <span class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></span>
+                <span id="onlineCount" class="opacity-90 tracking-wide">456,286 online</span>
+            </div>
+            
+            <!-- 1. Start Video Chat (Main Button) -->
             <button onclick="window.location.href='dating.html'" 
-                class="animate-heartbeat primary-glow bg-white text-indigo-900 font-extrabold py-4 px-10 rounded-2xl transition transform active:scale-95 text-lg flex items-center justify-center gap-2 shadow-2xl">
-                <span>Start Matching</span>
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-            </button>
-            
-            
-            <!-- 2. Download App Button -->
-            <button onclick="window.location.href='https://github.com/VideoDating/Video-Dating/raw/refs/heads/main/Video%20Dating.apk'" 
-                class="mt-6 bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 px-10 rounded-2xl shadow-xl transition transform active:scale-95 text-lg flex items-center justify-center gap-2">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14v-4H8l4-4 4 4h-3v4h-2z"/></svg>
-                Download App
+                class="btn-pink-gradient w-full max-w-sm py-5 rounded-full text-lg font-bold flex items-center justify-center gap-3 shadow-xl active:scale-95 transition-transform">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                </svg>
+                <span>Start Video Chat</span>
             </button>
 
-            <!-- 3. Developer Contact Button -->
-            <button onclick="window.open('https://instagram.com/1tx_awesh','_blank')" 
-                class="flex items-center justify-center gap-2 bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 text-white font-bold py-4 px-10 rounded-2xl shadow-xl transition transform active:scale-95 text-lg">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849s-.011 3.585-.069 4.85c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07s-3.584-.012-4.849-.07c-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849s.012-3.584.07-4.849c.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z"/></svg>
-                Developer Contact
-            </button>
-           
-           
-            
+            <!-- 2. Download & Contact (Secondary Buttons Row) -->
+            <div class="flex gap-3 w-full max-w-sm">
+                <!-- Download Button -->
+                <button onclick="window.location.href='https://github.com/VideoDating/Video-Dating/raw/refs/heads/main/Video%20Dating.apk'" 
+                    class="btn-outline flex-1 py-4 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 active:scale-95 transition-all">
+                    <svg class="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Download App
+                </button>
 
+                <!-- Contact Button -->
+                <button onclick="window.location.href='https://instagram.com/1tx_awesh'" 
+                    class="btn-outline flex-1 py-4 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 active:scale-95 transition-all">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    Contact Us
+                </button>
+            </div>
+
+            <p class="pt-4 text-[10px] opacity-20 tracking-widest uppercase">Copyright by AWESH Developer</p>
         </div>
-        
-        <p class="absolute bottom-6 text-[10px] opacity-40 tracking-widest uppercase">Copyright by AWESH Developer</p>
     </div>
+
+    <script>
+        // --- Image Slider Logic (Every 2 Seconds) ---
+        const images = [
+            "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600",
+            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=600",
+            "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=600",
+            "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=600",
+            "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=600"
+        ];
+
+        let currentIndex = 0;
+
+        function updateSlider() {
+            const leftIdx = (currentIndex + images.length - 1) % images.length;
+            const centerIdx = currentIndex;
+            const rightIdx = (currentIndex + 1) % images.length;
+
+            document.querySelector('#leftCard img').src = images[leftIdx];
+            document.querySelector('#centerCard img').src = images[centerIdx];
+            document.querySelector('#rightCard img').src = images[rightIdx];
+
+            currentIndex = (currentIndex + 1) % images.length;
+        }
+
+        updateSlider();
+        setInterval(updateSlider, 2000);
+
+        // --- Live Online Counter ---
+        let baseCount = 456286;
+        function updateOnlineCount() {
+            const fluctuation = Math.floor(Math.random() * 120) - 60;
+            baseCount += fluctuation;
+            document.getElementById('onlineCount').innerText = baseCount.toLocaleString() + " online";
+        }
+        setInterval(updateOnlineCount, 3000);
+    </script>
 
 </body>
 </html>
