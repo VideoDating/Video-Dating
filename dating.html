@@ -9,82 +9,64 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <style>
-        #remoteVideo { 
-            object-fit: cover; 
-            background: #000; 
-            z-index: 10; 
-        }
+        #remoteVideo { object-fit: cover; background: #000; z-index: 10; }
         video::-webkit-media-controls { display:none !important; }
-        video::-webkit-media-controls-start-playback-button { display: none !important; }
-        
-        #localVideo { 
-            object-fit: cover; 
-            background: #333; 
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 15px; 
-            z-index: 100;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-        }
-
-        .controls-layer {
-            position: absolute;
-            bottom: 50px;
-            left: 0;
-            right: 0;
-            z-index: 200;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-        }
+        #localVideo { object-fit: cover; background: #333; border: 2px solid rgba(255,255,255,0.3); border-radius: 15px; z-index: 100; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        .controls-layer { position: absolute; bottom: 40px; left: 0; right: 0; z-index: 200; display: flex; flex-direction: column; align-items: center; gap: 15px; }
         .mirror { transform: scaleX(-1); }
-        #chatBox {
-            max-width: 85%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
+        #chatBox { max-width: 85%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="bg-black text-white font-sans overflow-hidden">
+<body class="bg-black text-white font-sans overflow-hidden" onclick="unlockAudio()">
 
     <div id="appContainer" class="relative h-screen w-full bg-black">
+        <!-- Remote Video -->
         <video id="remoteVideo" autoplay playsinline webkit-playsinline class="absolute inset-0 w-full h-full bg-black"></video>
         
+        <!-- Local Video Preview -->
         <div class="absolute top-6 right-4 z-[100]">
             <video id="localVideo" autoplay muted playsinline class="w-28 h-40 mirror"></video>
-            <button onclick="switchCamera()" class="absolute -bottom-2 -left-2 bg-pink-500 text-white p-3 rounded-full shadow-2xl active:scale-75 transition-all border-2 border-white">
+            <!-- Camera Flip Button -->
+            <button onclick="switchCamera()" class="absolute -bottom-2 -left-2 bg-indigo-600/90 text-white p-3 rounded-full shadow-2xl border-1 border-white">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
             </button>
         </div>
 
+        <!-- Main Controls -->
         <div class="controls-layer">
-            <div id="status" class="bg-black/50 backdrop-blur-sm px-4 py-1 rounded-full text-xs font-semibold border border-white/20">
-                Initializing...
-            </div>
+            <div id="status" class="bg-black/50 backdrop-blur-sm px-4 py-1 rounded-full text-xs font-semibold border border-white/20">Initializing...</div>
 
+            <!-- Chat UI -->
             <div id="chatBox" class="hidden w-80 p-4 mb-2">
                 <div id="messages" class="h-24 overflow-y-auto text-xs space-y-2 mb-3 scrollbar-hide"></div>
                 <div class="flex gap-2">
-                    <input id="msgInput" type="text" placeholder="Type Messages..." class="flex-1 bg-white/10 p-2 rounded-full text-xs outline-none border border-white/20 text-white">
+                    <input id="msgInput" type="text" placeholder="Type..." class="flex-1 bg-white/10 p-2 rounded-full text-xs outline-none border border-white/20 text-white">
                     <button onclick="sendMsg()" class="bg-pink-500 p-2 px-4 rounded-full text-xs font-bold">Send</button>
                 </div>
             </div>
 
-            <div class="flex items-center gap-4">
+            <!-- Action Buttons Row -->
+            <div class="flex items-center gap-3">
+                <!-- Stop Call -->
                 <button onclick="stopMatch()" class="bg-red-600/90 p-4 rounded-full shadow-lg active:scale-90 transition">
                     <svg class="w-6 h-6" fill="white" viewBox="0 0 24 24"><path d="M12 2c5.52 0 10 4.48 10 10s-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2zM10 10h4v4h-4z"/></svg>
                 </button>
 
+                <!-- Video Toggle -->
                 <button id="camToggleBtn" onclick="toggleVideo()" class="bg-indigo-600/90 p-4 rounded-full shadow-lg active:scale-90 transition">
                     <svg id="camIcon" class="w-6 h-6" fill="white" viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
                 </button>
 
-                <button id="skipBtn" onclick="skipMatch()" class="bg-white text-black font-extrabold px-10 py-4 rounded-full shadow-2xl active:scale-95 transition">
-                    NEXT
+                <!-- Mute Toggle -->
+                <button id="micToggleBtn" onclick="toggleAudio()" class="bg-indigo-600/90 p-4 rounded-full shadow-lg active:scale-90 transition">
+                    <svg id="micIcon" class="w-6 h-6" fill="white" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
                 </button>
 
+                <!-- Next Match -->
+                <button id="skipBtn" onclick="skipMatch()" class="bg-white text-black font-extrabold px-8 py-4 rounded-full shadow-2xl active:scale-95 transition">NEXT</button>
+
+                <!-- Chat Toggle -->
                 <button onclick="toggleChat()" class="bg-indigo-600/90 p-4 rounded-full shadow-lg active:scale-90 transition">
                     <svg class="w-6 h-6" fill="white" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
                 </button>
@@ -110,76 +92,38 @@
         localStorage.setItem('guestId', userId);
 
         let localStream, peer, currentCall, dataConn;
-        let currentFacingMode = 'user'; 
-        let isVideoOn = true;
+        let currentFacingMode = 'user', isVideoOn = true, isAudioOn = true;
+        let audioUnlocked = false;
 
-        // Automatically start on page load
+        const peerConfig = { config: { 'iceServers': [{ url: 'stun:stun.l.google.com:19302' }, { url: 'stun:stun1.l.google.com:19302' }] } };
+
         window.onload = initPeer;
 
+        // Automatically unlock audio on first interaction
+        function unlockAudio() {
+            if (audioUnlocked) return;
+            const rv = document.getElementById('remoteVideo');
+            rv.play().then(() => {
+                audioUnlocked = true;
+                console.log("Audio Unlocked");
+            }).catch(() => {});
+        }
+
         async function initPeer() {
-            peer = new Peer(userId);
+            peer = new Peer(userId, peerConfig);
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: currentFacingMode }, 
-                    audio: true 
+                    audio: { echoCancellation: true, noiseSuppression: true } 
                 });
                 document.getElementById('localVideo').srcObject = localStream;
                 startMatch();
             } catch (err) {
-                alert("Need Camera and Mic Permission.");
+                alert("Camera & Mic required!");
                 window.location.href = 'index.html';
             }
-
-            peer.on('call', call => {
-                call.answer(localStream);
-                handleCall(call);
-            });
-
-            peer.on('connection', conn => {
-                dataConn = conn;
-                setupDataHandler();
-            });
-        }
-
-        function toggleVideo() {
-            if (localStream) {
-                isVideoOn = !isVideoOn;
-                localStream.getVideoTracks()[0].enabled = isVideoOn;
-                const btn = document.getElementById('camToggleBtn');
-                const icon = document.getElementById('camIcon');
-                if (isVideoOn) {
-                    btn.classList.replace('bg-gray-600', 'bg-indigo-600');
-                    icon.innerHTML = '<path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>';
-                } else {
-                    btn.classList.replace('bg-indigo-600', 'bg-gray-600');
-                    icon.innerHTML = '<path d="M18 10.48V6c0-1.1-.9-2-2-2H6.83l2 2H16v7.17l2 2v-4.69zM3.41 2.86L2 4.27l3.18 3.18C5.07 7.63 5 7.81 5 8v8c0 1.1.9 2 2 2h9c.22 0 .39-.07.55-.18L19.73 21l1.41-1.41L3.41 2.86zM7 16V9.17L13.83 16H7z"/>';
-                }
-            }
-        }
-
-        async function switchCamera() {
-            if (!localStream) return;
-            currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
-            const localVid = document.getElementById('localVideo');
-            if(currentFacingMode === 'user') localVid.classList.add('mirror');
-            else localVid.classList.remove('mirror');
-
-            try {
-                const newStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: currentFacingMode },
-                    audio: true
-                });
-
-                if (currentCall && currentCall.peerConnection) {
-                    const videoTrack = newStream.getVideoTracks()[0];
-                    const sender = currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
-                    if (sender) sender.replaceTrack(videoTrack);
-                }
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = newStream;
-                localVid.srcObject = localStream;
-                localStream.getVideoTracks()[0].enabled = isVideoOn;
-            } catch (err) { console.error(err); }
+            peer.on('call', call => { call.answer(localStream); handleCall(call); });
+            peer.on('connection', conn => { dataConn = conn; setupDataHandler(); });
         }
 
         function handleCall(call) {
@@ -187,7 +131,22 @@
             call.on('stream', remoteStream => {
                 const rv = document.getElementById('remoteVideo');
                 rv.srcObject = remoteStream;
+                rv.play().catch(e => { console.log("Waiting for user interaction to play sound"); });
                 document.getElementById('status').innerText = "Connected! 🟢";
+            });
+
+            // Auto-Rematch when other user leaves
+            call.on('close', () => { if (currentCall) skipMatch(); });
+        }
+
+        function setupDataHandler() {
+            // Auto-Rematch when other user skips
+            dataConn.on('close', () => { skipMatch(); });
+            dataConn.on('data', data => {
+                const msgDiv = document.createElement('div');
+                msgDiv.innerHTML = `<span class="text-pink-400 font-bold">Stranger:</span> <span class="text-white">${data}</span>`;
+                document.getElementById('messages').appendChild(msgDiv);
+                document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
             });
         }
 
@@ -211,25 +170,69 @@
         }
 
         function skipMatch() {
-            if (currentCall) currentCall.close();
-            if (dataConn) dataConn.close();
+            if (currentCall) { currentCall.close(); currentCall = null; }
+            if (dataConn) { dataConn.close(); dataConn = null; }
             document.getElementById('remoteVideo').srcObject = null;
             document.getElementById('messages').innerHTML = "";
             startMatch();
         }
 
-        function stopMatch() { window.location.href = 'index.html'; }
-        function toggleChat() { document.getElementById('chatBox').classList.toggle('hidden'); }
-
-        function setupDataHandler() {
-            dataConn.on('data', data => {
-                const msgDiv = document.createElement('div');
-                msgDiv.innerHTML = `<span class="text-pink-400 font-bold">Stranger:</span> <span class="text-white">${data}</span>`;
-                document.getElementById('messages').appendChild(msgDiv);
-                document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
-            });
+        // Camera Toggle (Icon and Color Switch)
+        function toggleVideo() {
+            if (localStream) {
+                isVideoOn = !isVideoOn;
+                localStream.getVideoTracks()[0].enabled = isVideoOn;
+                const btn = document.getElementById('camToggleBtn');
+                const icon = document.getElementById('camIcon');
+                btn.classList.toggle('bg-gray-600', !isVideoOn);
+                btn.classList.toggle('bg-indigo-600', isVideoOn);
+                if (isVideoOn) {
+                    icon.innerHTML = '<path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>';
+                } else {
+                    icon.innerHTML = '<path d="M18 10.48V6c0-1.1-.9-2-2-2H6.83l2 2H16v7.17l2 2v-4.69zM3.41 2.86L2 4.27l3.18 3.18C5.07 7.63 5 7.81 5 8v8c0 1.1.9 2 2 2h9c.22 0 .39-.07.55-.18L19.73 21l1.41-1.41L3.41 2.86z"/>';
+                }
+            }
         }
 
+        // Audio Toggle (Icon and Color Switch)
+        function toggleAudio() {
+            if (localStream) {
+                isAudioOn = !isAudioOn;
+                localStream.getAudioTracks()[0].enabled = isAudioOn;
+                const btn = document.getElementById('micToggleBtn');
+                const icon = document.getElementById('micIcon');
+                btn.classList.toggle('bg-gray-600', !isAudioOn);
+                btn.classList.toggle('bg-indigo-600', isAudioOn);
+                if (isAudioOn) {
+                    icon.innerHTML = '<path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>';
+                } else {
+                    icon.innerHTML = '<path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17l1.24 1.24c.43-.91.68-1.92.78-3.01h-2c-.11.66-.29 1.29-.53 1.88zM4.41 2.86L3 4.27l6 6V11c0 1.66 1.34 3 3 3 .22 0 .42-.03.62-.08l1.1 1.1c-.54.27-1.12.48-1.72.58v3.08h-2V21h4v-2.32c1.23-.2 2.39-.63 3.42-1.25l2.42 2.42 1.41-1.41L4.41 2.86z"/>';
+                }
+            }
+        }
+
+        async function switchCamera() {
+            if (!localStream) return;
+            currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
+            const localVid = document.getElementById('localVideo');
+            localVid.classList.toggle('mirror', currentFacingMode === 'user');
+            try {
+                const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode }, audio: true });
+                if (currentCall && currentCall.peerConnection) {
+                    const vTrack = newStream.getVideoTracks()[0];
+                    const sender = currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
+                    if (sender) sender.replaceTrack(vTrack);
+                }
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = newStream;
+                localVid.srcObject = localStream;
+                localStream.getVideoTracks()[0].enabled = isVideoOn;
+                localStream.getAudioTracks()[0].enabled = isAudioOn;
+            } catch (err) { console.error(err); }
+        }
+
+        function stopMatch() { window.location.href = 'index.html'; }
+        function toggleChat() { document.getElementById('chatBox').classList.toggle('hidden'); }
         function sendMsg() {
             const val = document.getElementById('msgInput').value;
             if (val && dataConn) {
